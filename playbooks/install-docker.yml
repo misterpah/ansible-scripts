@@ -1,0 +1,29 @@
+---
+  - name: Install Docker into Ubuntu
+    hosts: all
+    become: yes
+    tasks:
+      - name: Install Docker dependency
+        apt:
+          name: 
+            - ca-certificates 
+            - curl 
+            - gnupg 
+            - lsb-release
+          state: present
+          update_cache: true
+      - name: set Stable Repository for docker installation
+        ansible.builtin.shell:
+          cmd: echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      - name: Install Docker
+        apt:
+          name: 
+            - docker-ce 
+            - docker-ce-cli 
+            - containerd.io
+          state: present
+          update_cache: true
+      - name: create group called Docker
+        ignore_errors: yes
+        ansible.builtin.shell:
+          cmd: groupadd docker && usermod -aG docker $USER
