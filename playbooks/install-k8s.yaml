@@ -1,0 +1,47 @@
+---
+  - name: Install k8s into Ubuntu
+    hosts: all
+    become: yes
+    tasks:
+      - name: allow iptables see bridged traffic
+        ansible.builtin.script: ./k8s-components/allow_iptables_see_bridged_traffic.sh
+      - name: check if k8s port is available
+        ansible.builtin.script: ./k8s-components/telnet_k8s_port.sh
+        register: k8s_port_available
+      - name: fail if k8s port not available
+        when: k8s_port_available.stdout_lines[-1] != 'pass.port available.'
+        fail:
+          msg: k8s port is not available. stop k8s installation
+      - name: downlod GPG for Google Cloud public
+        ansible.builtin.shell: sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      - name: set Stable Repository for k8s repo
+        ansible.builtin.shell:
+          cmd: echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+      - name: Install k8s dependency
+        apt:
+          name: 
+            - ca-certificates 
+            - curl 
+            - apt-transport-https 
+            - kubelet 
+            - kubeadm
+            - kubectl
+            - jq
+          state: present
+          update_cache: true
+      - name: Hold kubelet
+        dpkg_selections:
+          name: kubelet
+          selection: hold
+      - name: Hold kubeadm
+        dpkg_selections:
+          name: kubeadm
+          selection: hold
+      - name: Hold kubectl
+        dpkg_selections:
+          name: kubectl
+          selection: hold
+      - name: Install k8s
+        ansible.builtin.script: ./k8s-components/kubeadm_init.yaml
+      - name: Install k8s-> calico network
+        ansible.builtin.script: ./k8s-components/k8s_install_calico_network.sh
