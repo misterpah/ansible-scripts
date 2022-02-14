@@ -42,6 +42,6 @@
           name: kubectl
           selection: hold
       - name: Install k8s
-        ansible.builtin.script: ./k8s-components/kubeadm_init.yaml
+        ansible.builtin.script: ./k8s-components/kubeadm_init.sh
       - name: Install k8s-> calico network
         ansible.builtin.script: ./k8s-components/k8s_install_calico_network.sh
